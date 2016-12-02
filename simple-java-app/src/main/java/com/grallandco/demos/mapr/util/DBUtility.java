@@ -3,6 +3,7 @@ package com.grallandco.demos.mapr.util;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import org.apache.hadoop.conf.Configuration;
@@ -40,7 +41,8 @@ public class DBUtility {
      * @param columnFamilies list of CF names
      * @return the HTable itself
      */
-    public static void createTable(final String tableName, final String[] columnFamilies) throws IOException {
+    public static void createTable(final String tableName, final String... columnFamilies)
+            throws IOException {
         final HBaseAdmin admin = new HBaseAdmin(configuration);
         if (admin.tableExists(tableName)) {
             System.out.println("Table " + tableName + " exists");
@@ -84,11 +86,37 @@ public class DBUtility {
      */
     public static void put(final String tableName, final String rowkey, final String columnFamily,
             final String column, final String value) throws IOException {
-        final HTable table = new HTable(configuration, tableName);
-        final Put put = new Put(Bytes.toBytes(rowkey));
-        put.add(Bytes.toBytes(columnFamily), Bytes.toBytes(column), Bytes.toBytes(value));
-        table.put(put);
-        System.out.println("Row/Col Inserted : " + rowkey + ":" + columnFamily + ":" + column + ":" + value);
+        try (final HTable table = new HTable(configuration, tableName)) {
+            final Put put = new Put(Bytes.toBytes(rowkey));
+            put.add(Bytes.toBytes(columnFamily), Bytes.toBytes(column), Bytes.toBytes(value));
+            table.put(put);
+            // System.out.println("Row/Col Inserted : " + rowkey + ":" + columnFamily + ":" + column + ":" +
+            // value);
+        }
+    }
+
+    /**
+     * Insert/Update a new value
+     *
+     * @param tableName
+     * @param rowkey
+     * @param columnFamily
+     * @param column
+     * @param value support only String for now
+     * @throws IOException
+     */
+    public static void put(final String tableName, final String rowkey, final String columnFamily,
+            final Map<String, String> values) throws IOException {
+        try (final HTable table = new HTable(configuration, tableName)) {
+            final Put put = new Put(Bytes.toBytes(rowkey));
+            for (final Entry<String, String> entry : values.entrySet()) {
+                put.add(Bytes.toBytes(columnFamily), Bytes.toBytes(entry.getKey()),
+                        Bytes.toBytes(entry.getValue()));
+            }
+            table.put(put);
+            // System.out.println("Row/Col Inserted : " + rowkey + ":" + columnFamily + ":" + column + ":" +
+            // value);
+        }
     }
 
     /**
